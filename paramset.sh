@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_NAME=$(basename "$0")
 
-PARAMS_FILE="/home/Larve/IDMC/Paramsetcli/EDWH_Paramset-example/ps_Global.params"
+PARAMS_FILE="Pfad/ps_Global.params"
 
 usage() {
   cat <<EOF
