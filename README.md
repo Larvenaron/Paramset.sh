@@ -35,7 +35,8 @@ Das Skript unterstützt zwei Aktionen:
 
 Eckdaten:
 
-* Es wird ausschließlich die lokale Datei gepflegt – keine `paramsetcli`-Aufrufe, kein Logfile.
+* Lokale Dateipflege mit automatischem IDMC-Upload: nach jeder Änderung wird das
+  Parameterset per `paramsetcli` (`-a upload -f`) hochgeladen; kein Logfile.
 * Das `$$`-Präfix des Parameternamens wird automatisch ergänzt.
 * Vor jeder tatsächlichen Änderung wird eine Sicherungskopie `ps_Global.params.bak` erstellt.
 * CRLF/LF-Zeilenenden werden erkannt und beim Zurückschreiben beibehalten.
@@ -76,7 +77,8 @@ Gedachte Funktionen:
 * Verwaltung **mehrerer** `.params`-Dateien statt nur einer hardcodierten Datei
 * Anlegen, Ändern, Löschen und Vergleichen (Diff) von Parametern über Sections hinweg
 * Validierung von Parameterdateien (Namenskonventionen, Duplikate, Struktur)
-* Anbindung an IDMC via `paramsetcli` (z. B. Upload/Update/List/Sync von Parametersets)
+* Erweiterte IDMC-Anbindung via `paramsetcli` (Update/List/Sync; der automatische
+  Upload nach Änderung ist in `paramset.sh` bereits umgesetzt)
 * Einheitliche Hilfe, Exit-Codes und Fehlerausgaben
 
 Status: **geplant** – Vorschläge und Anforderungen willkommen.

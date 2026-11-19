@@ -1,12 +1,26 @@
 #!/usr/bin/env bash
 # Pflegt Parameter in der hardcodierten IDMC-Parameterdatei ps_Global.params
 # (GLOBAL- und Taskflow-Sections).
+# Nach jeder tatsächlichen Änderung der Datei wird das Parameterset automatisch
+# per paramsetcli (Informatica) zu IDMC hochgeladen.
 
 set -euo pipefail
 
 SCRIPT_NAME=$(basename "$0")
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 PARAMS_FILE="Pfad/ps_Global.params"
+
+# ---- paramsetcli (Informatica) - hardcodierte Werte der Zielumgebung ----
+# Wird nach jeder tatsächlichen Änderung der Parameterdatei automatisch aufgerufen:
+# ./paramsetcli.sh runParamSetCli -un "ps_Global.params" -pf "ps_Global.params" \
+#   -pd "/home/infarun/paramsetcli/Parameterfile/" -a upload -f
+PARAMSETCLI_BIN="./paramsetcli.sh"                 # paramsetcli, liegt im Skriptverzeichnis
+PS_UN="ps_Global.params"                           # -un Unique Parametersetname
+PS_PF="ps_Global.params"                           # -pf ParameterFile
+PS_PD="/home/infarun/paramsetcli/Parameterfile/"   # -pd Parameterfiledir
+PS_ACTION="upload"                                 # -a Action
+PS_FORCE="-f"                                      # -f Force
 
 usage() {
   cat <<EOF
@@ -26,6 +40,8 @@ Zieldatei (hardcodiert): $PARAMS_FILE
 Section-Header für Taskflows: [Projekt].[Folder].[Taskflow]
 Das \$\$-Präfix des Parameternamens wird automatisch ergänzt.
 Vor jeder Änderung wird eine Sicherungskopie '$PARAMS_FILE.bak' erstellt.
+Nach jeder Änderung wird das Parameterset automatisch per paramsetcli
+(${PS_ACTION}, ${PS_FORCE}) zu IDMC hochgeladen.
 
 Wichtig: -pn und -pv immer quotiert übergeben. Ein unquotiertes \$\$ wird von der
 Shell durch ihre Prozess-ID ersetzt (aus -pn \$\$Name wird -pn 2048Name).
@@ -156,6 +172,8 @@ LINES=()
 # 1 = Datei verwendet Windows-Zeilenumbrüche (CRLF), 0 = Unix (LF).
 # Das erkannte Format wird beim Zurückschreiben beibehalten.
 FILE_CRLF=0
+# 1 = die Datei wurde in diesem Lauf geändert -> anschließend automatischer Upload.
+MODIFIED=0
 
 # Liest die Datei in LINES ein. CRLF wird erkannt und bereinigt,
 # das Zeilenenden-Format bleibt beim Zurückschreiben erhalten.
@@ -183,11 +201,31 @@ save_file() {
   fi
 }
 
-# Erstellt vor jeder Änderung eine Sicherungskopie der Datei.
+# Erstellt vor jeder Änderung eine Sicherungskopie der Datei und markiert,
+# dass in diesem Lauf eine Änderung erfolgt ist (MODIFIED=1 -> automatischer Upload).
 make_backup() {
   local file="$1"
   cp -p "$file" "${file}.bak"
+  MODIFIED=1
   echo "Sicherungskopie '${file}.bak' erstellt."
+}
+
+# Führt nach einer Änderung der Datei den Upload zum Parameterset in IDMC aus.
+do_upload() {
+  if [[ ! -f "${SCRIPT_DIR}/paramsetcli.sh" ]]; then
+    echo "Fehler: paramsetcli.sh wurde im Skriptverzeichnis ($SCRIPT_DIR) nicht gefunden." >&2
+    echo "Die lokale Änderung wurde bereits gespeichert (rückspielbar über ${PARAMS_FILE}.bak), der Upload zum Parameterset fehlte." >&2
+    exit 1
+  fi
+  echo "Änderung erkannt - aktualisiere Parameterset in IDMC (paramsetcli, -a ${PS_ACTION} ${PS_FORCE})..."
+  echo "+ $PARAMSETCLI_BIN runParamSetCli -un \"$PS_UN\" -pf \"$PS_PF\" -pd \"$PS_PD\" -a \"$PS_ACTION\" $PS_FORCE"
+  local rc=0
+  ( cd "$SCRIPT_DIR" && "$PARAMSETCLI_BIN" runParamSetCli -un "$PS_UN" -pf "$PS_PF" -pd "$PS_PD" -a "$PS_ACTION" "$PS_FORCE" ) || rc=$?
+  if [[ $rc -ne 0 ]]; then
+    echo "Fehler: Upload zum Parameterset fehlgeschlagen (Exit $rc). Die lokale Änderung wurde bereits gespeichert." >&2
+    exit "$rc"
+  fi
+  echo "Upload erfolgreich abgeschlossen."
 }
 
 # Section-Header sind Zeilen der Form "[...]".
@@ -341,4 +379,9 @@ if [[ "$ACTION_LC" == "add" ]]; then
   do_add
 else
   do_delete
+fi
+
+# Nur bei tatsächlicher Änderung der Datei: Parameterset automatisch hochladen.
+if [[ "$MODIFIED" -eq 1 ]]; then
+  do_upload
 fi

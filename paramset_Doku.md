@@ -20,7 +20,9 @@ Das Skript unterstützt genau zwei Aktionen:
 
 Wichtige Rahmenbedingungen:
 
-* Es wird **nur die lokale Datei** gepflegt. Es finden **keine `paramsetcli`-Aufrufe** statt.
+* Die Datei wird lokal gepflegt. Nach jeder **tatsächlichen Änderung** wird das
+  Parameterset automatisch per `paramsetcli` (Informatica) zu IDMC hochgeladen
+  (siehe Abschnitt 7).
 * Es wird **kein Logfile** geschrieben. Die Ausgabe erfolgt ausschließlich auf der Shell.
 * Vor jeder tatsächlichen Änderung wird automatisch eine Sicherungskopie
   `ps_Global.params.bak` erstellt (überschreibt die vorherige Sicherung).
@@ -224,7 +226,7 @@ paramset.sh -a add -s Global -pn DB_DEBUG_FLATFILE_OUTPUT -pv '1=0'
 
 ---
 
-## 7. Backup-Verhalten
+## 7. Backup und automatischer Upload
 
 * Vor **jeder tatsächlichen Änderung** der Datei wird `ps_Global.params.bak` angelegt
   (eine bereits vorhandene `.bak` wird überschrieben).
@@ -232,6 +234,22 @@ paramset.sh -a add -s Global -pn DB_DEBUG_FLATFILE_OUTPUT -pv '1=0'
   wird **kein** Backup erstellt.
 * Die `.bak`-Datei erlaubt es, eine versehentliche Änderung einfach zurückzuspielen:
   `cp ps_Global.params.bak ps_Global.params`
+
+### 7.1 Automatischer Upload nach Änderung
+
+Nach jeder **tatsächlichen Änderung** (neuer Parameter, `-force`-Überschreiben, Löschen,
+neu angelegte Section) wird automatisch das Parameterset zu IDMC hochgeladen:
+
+```
+./paramsetcli.sh runParamSetCli -un "ps_Global.params" -pf "ps_Global.params" -pd "/home/infarun/paramsetcli/Parameterfile/" -a upload -f
+```
+
+* Parameter: `-un` Unique Parametersetname, `-pf` ParameterFile, `-pd` Parameterfiledir,
+  `-a` Action, `-f` Force. Alle Werte sind im oberen Teil des Skripts hardcodiert (Zielumgebung).
+* `paramsetcli.sh` muss im selben Verzeichnis wie `paramset.sh` liegen.
+* Kein Upload bei „nichts geändert" (identischer Parameter bzw. Parameter nicht vorhanden).
+* Schlägt der Upload fehl, bricht das Skript mit dem Exit-Code des Tools ab; die lokale
+  Änderung bleibt gespeichert (rückspielbar über `.bak`).
 
 ---
 
@@ -241,6 +259,7 @@ paramset.sh -a add -s Global -pn DB_DEBUG_FLATFILE_OUTPUT -pv '1=0'
 |------|-----------|
 | 0 | Aktion erfolgreich (auch „nichts zu tun" bei identischem Parameter bzw. nicht vorhandenem Parameter) |
 | 1 | Fehler (z. B. fehlende Optionen, abweichender Wert ohne `-force`, ungültiger Parametername, Datei nicht gefunden) |
+| Exit-Code des Tools | Upload per `paramsetcli` fehlgeschlagen; die lokale Änderung bleibt gespeichert |
 
 ---
 
@@ -301,3 +320,6 @@ paramset.sh -h
 | `delete`: Parameter mit anderem Wert vorhanden | Fehler mit Hinweis (Exit 1) |
 | `delete`: Parameter nicht vorhanden | Info, nichts geändert (Exit 0) |
 | Parameterdatei nicht gefunden | Fehler (Exit 1) |
+| Änderung erfolgreich | Automatischer `paramsetcli`-Upload (`upload`, `force`) folgt |
+| `paramsetcli.sh` im Skriptverzeichnis fehlt | Fehler (Exit 1) – lokale Änderung bleibt gespeichert |
+| Upload schlägt fehl | Fehler mit Exit-Code des Tools – lokale Änderung bleibt gespeichert |
