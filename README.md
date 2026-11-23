@@ -39,7 +39,7 @@ Eckdaten:
   Parameterset per `paramsetcli` (`-a upload -f`) hochgeladen; kein Logfile.
 * Das `$$`-Präfix des Parameternamens wird automatisch ergänzt.
 * Vor jeder tatsächlichen Änderung wird eine Sicherungskopie `ps_Global.params.bak` erstellt.
-* CRLF/LF-Zeilenenden werden erkannt und beim Zurückschreiben beibehalten.
+* CRLF/LF-Zeilenenden werden erkannt und beim Zurückschreiben beibehalten
 
 Kurzübersicht:
 
