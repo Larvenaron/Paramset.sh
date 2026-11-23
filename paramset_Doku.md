@@ -34,6 +34,8 @@ Wichtige Rahmenbedingungen:
 ## 2. Dateistruktur der Parameterdatei
 
 ```
+#USE_SECTIONS
+
 [GLOBAL]
 $$SOURCE_OWNER=ENTW100
 $$ODS_OWNER=DW2EO
@@ -52,6 +54,9 @@ $$THEMENBLOCK=3
 
 Regeln:
 
+* Die **erste Zeile** der Datei muss `#USE_SECTIONS` sein (Kennzeichnung für IDMC, dass die
+  Datei Sections verwendet). Fehlt sie oder ist sie beschädigt, verweigert das Skript die
+  Bearbeitung mit Fehler (Exit 1).
 * Eine Parameterzeile hat das Format `$$Name=Value` (per Skript ohne Anführungszeichen).
 * Sections sind durch Zeilen der Form `[...]` getrennt; zwischen den Sections steht eine Leerzeile.
 * Existiert die Taskflow-Section noch nicht, legt `add` sie **am Dateiende** neu an.
@@ -320,6 +325,7 @@ paramset.sh -h
 | `delete`: Parameter mit anderem Wert vorhanden | Fehler mit Hinweis (Exit 1) |
 | `delete`: Parameter nicht vorhanden | Info, nichts geändert (Exit 0) |
 | Parameterdatei nicht gefunden | Fehler (Exit 1) |
+| Erste Zeile ist nicht `#USE_SECTIONS` bzw. Datei leer | Fehler (Exit 1), keine Bearbeitung |
 | Änderung erfolgreich | Automatischer `paramsetcli`-Upload (`upload`, `force`) folgt |
 | `paramsetcli.sh` im Skriptverzeichnis fehlt | Fehler (Exit 1) – lokale Änderung bleibt gespeichert |
 | Upload schlägt fehl | Fehler mit Exit-Code des Tools – lokale Änderung bleibt gespeichert |

@@ -375,6 +375,21 @@ do_delete() {
 
 load_file "$PARAMS_FILE"
 
+# Strukturprüfung: Die erste Zeile der Parameterdatei muss '#USE_SECTIONS' sein.
+# (Kennzeichnet für IDMC, dass die Datei Sections verwendet.) Fehlt sie, wurde die
+# Datei vermutlich extern beschädigt - das Skript verweigert dann die Bearbeitung,
+# damit kein weiterer Schaden entsteht.
+if [[ ${#LINES[@]} -eq 0 ]]; then
+  echo "Fehler: Parameterdatei '$PARAMS_FILE' ist leer. Die erste Zeile muss '#USE_SECTIONS' sein." >&2
+  exit 1
+fi
+if [[ "${LINES[0]}" != "#USE_SECTIONS" ]]; then
+  echo "Fehler: Die erste Zeile der Parameterdatei '$PARAMS_FILE' muss '#USE_SECTIONS' sein." >&2
+  echo "Gefunden: '${LINES[0]}'" >&2
+  echo "Die Datei wurde vermutlich extern verändert. Bitte die erste Zeile korrigieren oder die Sicherungskopie '${PARAMS_FILE}.bak' wiederherstellen." >&2
+  exit 1
+fi
+
 if [[ "$ACTION_LC" == "add" ]]; then
   do_add
 else
